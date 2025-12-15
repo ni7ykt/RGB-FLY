@@ -1,7 +1,7 @@
 local whitelist = {
     "mknhghv",
     "Kadys5373",
-    "Player3",
+    "HYHuiBai",
 }
 
 -- 检查是否在白名单中
