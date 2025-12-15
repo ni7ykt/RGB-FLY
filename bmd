@@ -1,0 +1,25 @@
+local StarterGui = game:GetService("StarterGui")
+local Players = game:GetService("Players")
+local Whitelisted = {
+    ["mknhghv"] = true,
+    ["Kadys5373"] = true,
+}
+
+local function IsWhitelisted(player)
+    return Whitelisted[player.Name] or false
+end
+
+local localPlayer = Players.LocalPlayer
+
+local isLocalPlayerWhitelisted = IsWhitelisted(localPlayer)
+
+if isLocalPlayerWhitelisted then
+    StarterGui:SetCore("SendNotification", {
+        Title = "白名单认证",
+        Text = "玩家:"..localPlayer.Name.."，检测完毕白名单玩家，稍后会加载脚本",
+        Duration = 7,
+    })
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kyuansmile/yuanma/refs/heads/main/zy"))()
+else
+    localPlayer:Kick("请联系作者添加白名单")
+end
