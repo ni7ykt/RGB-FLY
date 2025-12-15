@@ -1,5 +1,5 @@
 --这个范围没有限制
---zy
+--rjr
 
 local old
 old = hookmetamethod(game:GetService("StarterGui"), "__namecall", newcclosure(function(self, ...)
