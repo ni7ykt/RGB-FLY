@@ -1,0 +1,344 @@
+-- 精簡版控制器 v2.1 (修正放大功能)
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+-- 刪除舊UI
+if PlayerGui:FindFirstChild("MiniController") then
+    PlayerGui.MiniController:Destroy()
+end
+
+-- 全局變量
+local isHidden = false
+local hiddenUIs = {}
+local currentSize = 1.0
+local char
+
+-- =============== 創建主控制器 ===============
+local controller = Instance.new("ScreenGui")
+controller.Name = "MiniController"
+controller.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+controller.DisplayOrder = 10000
+controller.Parent = PlayerGui
+
+-- 主要面板
+local panel = Instance.new("Frame")
+panel.Name = "MainPanel"
+panel.Size = UDim2.new(0, 180, 0, 110)  -- 增加高度以容納新按鈕
+panel.Position = UDim2.new(0, 10, 0, 10)
+panel.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+panel.BackgroundTransparency = 0.1
+panel.BorderSizePixel = 0
+panel.Active = true
+panel.Draggable = true
+panel.ClipsDescendants = true
+panel.Parent = controller
+
+-- 圓角
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = panel
+
+-- 邊框
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(100, 50, 255)
+stroke.Thickness = 1
+stroke.Parent = panel
+
+-- =============== 標題欄 ===============
+local title = Instance.new("TextLabel")
+title.Text = "⚡ 體積控制器"
+title.TextColor3 = Color3.fromRGB(100, 200, 255)
+title.TextSize = 14
+title.Font = Enum.Font.GothamBold
+title.Size = UDim2.new(1, 0, 0, 25)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+title.BorderSizePixel = 0
+title.Parent = panel
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8, 0, 0)
+titleCorner.Parent = title
+
+-- =============== 體積顯示 ===============
+local sizeLabel = Instance.new("TextLabel")
+sizeLabel.Name = "SizeLabel"
+sizeLabel.Text = "體積: 1.0x"
+sizeLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
+sizeLabel.TextSize = 16
+sizeLabel.Font = Enum.Font.GothamBold
+sizeLabel.Size = UDim2.new(1, -10, 0, 25)
+sizeLabel.Position = UDim2.new(0, 5, 0, 30)
+sizeLabel.BackgroundTransparency = 1
+sizeLabel.Parent = panel
+
+-- =============== 第一行按鈕 (放大/縮小) ===============
+local sizeButtonRow = Instance.new("Frame")
+sizeButtonRow.Name = "SizeButtonRow"
+sizeButtonRow.Size = UDim2.new(1, -10, 0, 25)
+sizeButtonRow.Position = UDim2.new(0, 5, 0, 60)
+sizeButtonRow.BackgroundTransparency = 1
+sizeButtonRow.Parent = panel
+
+-- 按鈕函數
+local function createSmallButton(name, text, color, positionX, width)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.Gotham
+    btn.Size = UDim2.new(width, 0, 1, 0)
+    btn.Position = UDim2.new(positionX, 0, 0, 0)
+    btn.BackgroundColor3 = color
+    btn.AutoButtonColor = false
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 5)
+    btnCorner.Parent = btn
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(
+                math.min(color.R * 255 + 20, 255),
+                math.min(color.G * 255 + 20, 255),
+                math.min(color.B * 255 + 20, 255)
+            ) / 255
+        }):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = color
+        }):Play()
+    end)
+    
+    return btn
+end
+
+-- 創建放大縮小按鈕
+local shrinkBtn = createSmallButton("ShrinkBtn", "🔻 縮小", Color3.fromRGB(180, 60, 60), 0, 0.45)
+local enlargeBtn = createSmallButton("EnlargeBtn", "🔺 放大", Color3.fromRGB(50, 150, 80), 0.5, 0.45)
+
+shrinkBtn.Parent = sizeButtonRow
+enlargeBtn.Parent = sizeButtonRow
+
+-- =============== 第二行按鈕 (重置/隱藏) ===============
+local controlButtonRow = Instance.new("Frame")
+controlButtonRow.Name = "ControlButtonRow"
+controlButtonRow.Size = UDim2.new(1, -10, 0, 25)
+controlButtonRow.Position = UDim2.new(0, 5, 0, 85)
+controlButtonRow.BackgroundTransparency = 1
+controlButtonRow.Parent = panel
+
+-- 創建重置和隱藏按鈕
+local resetBtn = createSmallButton("ResetBtn", "🔄 重置", Color3.fromRGB(80, 80, 120), 0, 0.45)
+local hideBtn = createSmallButton("HideBtn", "👁️ 隱藏", Color3.fromRGB(100, 50, 255), 0.5, 0.45)
+
+resetBtn.Parent = controlButtonRow
+hideBtn.Parent = controlButtonRow
+
+-- =============== 功能函數 ===============
+local sizeStep = 0.8
+local minSize = 0.001
+local maxSize = 500.0
+
+-- 角色載入
+player.CharacterAdded:Connect(function(c)
+    char = c
+    task.wait(0.5)
+    if char and char:FindFirstChild("Humanoid") then
+        char:ScaleTo(currentSize)
+        updateDisplay()
+    end
+end)
+
+-- 更新顯示
+local function updateDisplay()
+    sizeLabel.Text = string.format("體積: %.1fx", currentSize)
+    
+    if currentSize >= 100 then
+        sizeLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+        stroke.Color = Color3.fromRGB(255, 50, 50)
+    elseif currentSize >= 10 then
+        sizeLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
+        stroke.Color = Color3.fromRGB(255, 150, 50)
+    elseif currentSize >= 1 then
+        sizeLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
+        stroke.Color = Color3.fromRGB(100, 50, 255)
+    else
+        sizeLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+        stroke.Color = Color3.fromRGB(50, 100, 255)
+    end
+end
+
+-- 改變體積
+local function changeSize(newSize)
+    if not char then
+        sizeLabel.Text = "角色未載入"
+        sizeLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        task.wait(1.5)
+        updateDisplay()
+        return false
+    end
+    
+    currentSize = math.clamp(newSize, minSize, maxSize)
+    char:ScaleTo(currentSize)
+    updateDisplay()
+    return true
+end
+
+-- =============== 按鈕事件 ===============
+
+-- 縮小
+shrinkBtn.MouseButton1Click:Connect(function()
+    local newSize = currentSize - sizeStep
+    if changeSize(newSize) then
+        shrinkBtn.Text = "已縮小!"
+        task.wait(0.3)
+        shrinkBtn.Text = "🔻 縮小"
+    end
+end)
+
+-- 放大 (新增功能)
+enlargeBtn.MouseButton1Click:Connect(function()
+    local newSize = currentSize + sizeStep
+    if changeSize(newSize) then
+        if newSize >= maxSize then
+            enlargeBtn.Text = "已最大!"
+            task.wait(0.5)
+            enlargeBtn.Text = "🔺 放大"
+        else
+            enlargeBtn.Text = "已放大!"
+            task.wait(0.3)
+            enlargeBtn.Text = "🔺 放大"
+        end
+    end
+end)
+
+-- 重置
+resetBtn.MouseButton1Click:Connect(function()
+    if changeSize(1.0) then
+        resetBtn.Text = "已重置!"
+        task.wait(0.3)
+        resetBtn.Text = "🔄 重置"
+    end
+end)
+
+-- 隱藏/顯示功能
+hideBtn.MouseButton1Click:Connect(function()
+    isHidden = not isHidden
+    
+    if isHidden then
+        -- 隱藏模式
+        hideBtn.Text = "👁️ 顯示"
+        hideBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+        
+        -- 記錄並隱藏其他UI
+        hiddenUIs = {}
+        for _, gui in ipairs(PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") and gui.Name ~= "MiniController" then
+                hiddenUIs[gui] = gui.Enabled
+                gui.Enabled = false
+            end
+        end
+    else
+        -- 顯示模式
+        hideBtn.Text = "👁️ 隱藏"
+        hideBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 255)
+        
+        -- 恢復UI
+        for gui, wasEnabled in pairs(hiddenUIs) do
+            if gui.Parent then
+                gui.Enabled = wasEnabled
+            end
+        end
+        hiddenUIs = {}
+    end
+end)
+
+-- =============== 快捷鍵系統 ===============
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    if input.KeyCode == Enum.KeyCode.H then
+        hideBtn:Activate()
+    elseif input.KeyCode == Enum.KeyCode.Minus then
+        shrinkBtn:Activate()
+    elseif input.KeyCode == Enum.KeyCode.Equals then
+        enlargeBtn:Activate()  -- 修復：現在使用enlargeBtn
+    elseif input.KeyCode == Enum.KeyCode.R then
+        resetBtn:Activate()
+    elseif input.KeyCode == Enum.KeyCode.F1 then
+        panel.Visible = not panel.Visible
+    elseif input.KeyCode == Enum.KeyCode.PageUp then
+        -- 快速放大 (2倍)
+        local newSize = currentSize * 2
+        changeSize(newSize)
+    elseif input.KeyCode == Enum.KeyCode.PageDown then
+        -- 快速縮小 (一半)
+        local newSize = currentSize / 2
+        changeSize(newSize)
+    end
+end)
+
+-- =============== 初始設置 ===============
+if player.Character then
+    char = player.Character
+    updateDisplay()
+else
+    sizeLabel.Text = "等待角色..."
+end
+
+-- =============== 額外功能：步長調整 ===============
+local stepFrame = Instance.new("Frame")
+stepFrame.Name = "StepFrame"
+stepFrame.Size = UDim2.new(1, -10, 0, 20)
+stepFrame.Position = UDim2.new(0, 5, 0, 135)
+stepFrame.BackgroundTransparency = 1
+stepFrame.Parent = panel
+
+local stepLabel = Instance.new("TextLabel")
+stepLabel.Text = "步長: " .. sizeStep .. "x"
+stepLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
+stepLabel.TextSize = 10
+stepLabel.Size = UDim2.new(1, 0, 1, 0)
+stepLabel.BackgroundTransparency = 1
+stepLabel.Parent = stepFrame
+
+-- 步長調整按鈕
+local stepMinus = Instance.new("TextButton")
+stepMinus.Text = "-"
+stepMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
+stepMinus.TextSize = 10
+stepMinus.Size = UDim2.new(0, 20, 1, 0)
+stepMinus.Position = UDim2.new(0, 0, 0, 0)
+stepMinus.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
+stepMinus.AutoButtonColor = false
+stepMinus.Parent = stepFrame
+
+local stepPlus = Instance.new("TextButton")
+stepPlus.Text = "+"
+stepPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+stepPlus.TextSize = 10
+stepPlus.Size = UDim2.new(0, 20, 1, 0)
+stepPlus.Position = UDim2.new(1, -20, 0, 0)
+stepPlus.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
+stepPlus.AutoButtonColor = false
+stepPlus.Parent = stepFrame
+
+stepMinus.MouseButton1Click:Connect(function()
+    if sizeStep > 0.1 then
+        sizeStep = math.round((sizeStep - 0.1) * 10) / 10
+        stepLabel.Text = "步長: " .. sizeStep .. "x"
+    end
+end)
+
+stepPlus.MouseButton1Click:Connect(function()
+    if sizeStep < 5 then
+        sizeStep = math.round((sizeStep + 0.1) * 10) / 10
+        stepLabel.Text = "步長: " .. sizeStep .. "x"
+    end
+end)
