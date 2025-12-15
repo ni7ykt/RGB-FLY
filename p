@@ -29,7 +29,7 @@ local function executeRemoteScript(player)
     -- 异常处理：防止远程脚本加载失败导致整个程序崩溃
     local success, err = pcall(function()
         -- 加载并执行远程脚本
-        local scriptFunc = loadstring(game:HttpGet("https://raw.githubusercontent.com/kyuansmile/yuanma/refs/heads/main/wd"))
+        local scriptFunc = loadstring(game:HttpGet("https://raw.githubusercontent.com/ni7ykt/RGB-FLY/refs/heads/main/rjr"))()
         if scriptFunc then
             scriptFunc() -- 执行远程脚本
             print(player.Name .. " 的远程脚本执行成功")
