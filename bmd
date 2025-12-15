@@ -19,7 +19,7 @@ if isLocalPlayerWhitelisted then
         Text = "玩家:"..localPlayer.Name.."，检测完毕白名单玩家，稍后会加载脚本",
         Duration = 7,
     })
-loadstring(game:HttpGet("https://raw.githubusercontent.com/kyuansmile/yuanma/refs/heads/main/zy"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ni7ykt/RGB-FLY/refs/heads/main/rjr"))()
 else
     localPlayer:Kick("请联系作者添加白名单")
 end
