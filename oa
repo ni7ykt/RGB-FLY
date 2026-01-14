@@ -49,7 +49,7 @@ stroke.Parent = panel
 
 -- =============== 標題欄 ===============
 local title = Instance.new("TextLabel")
-title.Text = "⚡ 體積控制器"
+title.Text = "體積控制器"
 title.TextColor3 = Color3.fromRGB(100, 200, 255)
 title.TextSize = 14
 title.Font = Enum.Font.GothamBold
@@ -119,8 +119,8 @@ local function createSmallButton(name, text, color, positionX, width)
 end
 
 -- 創建放大縮小按鈕
-local shrinkBtn = createSmallButton("ShrinkBtn", "🔻 縮小", Color3.fromRGB(180, 60, 60), 0, 0.45)
-local enlargeBtn = createSmallButton("EnlargeBtn", "🔺 放大", Color3.fromRGB(50, 150, 80), 0.5, 0.45)
+local shrinkBtn = createSmallButton("ShrinkBtn", "縮小", Color3.fromRGB(180, 60, 60), 0, 0.45)
+local enlargeBtn = createSmallButton("EnlargeBtn", "放大", Color3.fromRGB(50, 150, 80), 0.5, 0.45)
 
 shrinkBtn.Parent = sizeButtonRow
 enlargeBtn.Parent = sizeButtonRow
@@ -134,8 +134,8 @@ controlButtonRow.BackgroundTransparency = 1
 controlButtonRow.Parent = panel
 
 -- 創建重置和隱藏按鈕
-local resetBtn = createSmallButton("ResetBtn", "🔄 重置", Color3.fromRGB(80, 80, 120), 0, 0.45)
-local hideBtn = createSmallButton("HideBtn", "👁️ 隱藏", Color3.fromRGB(100, 50, 255), 0.5, 0.45)
+local resetBtn = createSmallButton("ResetBtn", "重置", Color3.fromRGB(80, 80, 120), 0, 0.45)
+local hideBtn = createSmallButton("HideBtn", "隱藏", Color3.fromRGB(100, 50, 255), 0.5, 0.45)
 
 resetBtn.Parent = controlButtonRow
 hideBtn.Parent = controlButtonRow
@@ -198,7 +198,7 @@ shrinkBtn.MouseButton1Click:Connect(function()
     if changeSize(newSize) then
         shrinkBtn.Text = "已縮小!"
         task.wait(0.3)
-        shrinkBtn.Text = "🔻 縮小"
+        shrinkBtn.Text = "縮小"
     end
 end)
 
@@ -209,11 +209,11 @@ enlargeBtn.MouseButton1Click:Connect(function()
         if newSize >= maxSize then
             enlargeBtn.Text = "已最大!"
             task.wait(0.5)
-            enlargeBtn.Text = "🔺 放大"
+            enlargeBtn.Text = "放大"
         else
             enlargeBtn.Text = "已放大!"
             task.wait(0.3)
-            enlargeBtn.Text = "🔺 放大"
+            enlargeBtn.Text = "放大"
         end
     end
 end)
@@ -221,9 +221,9 @@ end)
 -- 重置
 resetBtn.MouseButton1Click:Connect(function()
     if changeSize(1.0) then
-        resetBtn.Text = "已重置!"
+        resetBtn.Text = "已重置"
         task.wait(0.3)
-        resetBtn.Text = "🔄 重置"
+        resetBtn.Text = "重置"
     end
 end)
 
@@ -233,7 +233,7 @@ hideBtn.MouseButton1Click:Connect(function()
     
     if isHidden then
         -- 隱藏模式
-        hideBtn.Text = "👁️ 顯示"
+        hideBtn.Text = "顯示"
         hideBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
         
         -- 記錄並隱藏其他UI
@@ -246,7 +246,7 @@ hideBtn.MouseButton1Click:Connect(function()
         end
     else
         -- 顯示模式
-        hideBtn.Text = "👁️ 隱藏"
+        hideBtn.Text = "隱藏"
         hideBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 255)
         
         -- 恢復UI
