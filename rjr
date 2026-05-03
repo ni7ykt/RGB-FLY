@@ -1,22 +1,7 @@
 --这个范围没有限制
 --rjr
 
-local old
-old = hookmetamethod(game:GetService("StarterGui"), "__namecall", newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-        if method == "SetCore" and args[1] == "SendNotification" then
-            local options = args[2]
-            if type(options) == "table" and 
-               tostring(options.Title) == 凌霄脚本" and 
-               tostring(options.Text) == "初音制作" 
-            then
-                local modifiedOptions = table.clone(options)
-                modifiedOptions.Text = "1"
-            end
-        end
-     return old(self, ...)
-end))
+
 
 
 local main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
